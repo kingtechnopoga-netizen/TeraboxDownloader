@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
@@ -26,11 +27,22 @@ log = logging.getLogger(__name__)
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36"
+    "Chrome/135.0.0.0 Safari/537.36"
 )
 
-# Hosts Terabox uses; we try them in order when normalizing/redirecting.
-TERABOX_API_HOST = "https://www.1024terabox.com"
+# Hosts to try (in order) when fetching the share landing page and calling the
+# share/list API. Terabox runs the same backend on multiple mirrors; if one
+# refuses or rate-limits us, the next usually works.
+TERABOX_HOSTS = (
+    "https://www.terabox.com",
+    "https://www.1024terabox.com",
+    "https://www.terabox.app",
+    "https://www.1024tera.com",
+)
+
+# Default API host used for share/list calls. We'll fall back to other hosts
+# in `TERABOX_HOSTS` if this one fails.
+TERABOX_API_HOST = TERABOX_HOSTS[0]
 
 DEFAULT_TIMEOUT = 20
 
@@ -47,6 +59,13 @@ def _build_session(cookie: Optional[str] = None) -> requests.Session:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
             "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "sec-ch-ua": '"Chromium";v="135", "Not-A.Brand";v="8"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
         }
     )
     if cookie:
@@ -66,11 +85,20 @@ def _find_between(text: str, start: str, end: str) -> str:
 
 
 def _extract_surl(url: str) -> str:
-    """Extract the `surl` parameter from any Terabox-style share URL."""
+    """Extract the `surl` parameter from any Terabox-style share URL.
+
+    Terabox short share URLs come in two flavours:
+        https://host/s/1<surl>          (path form, with a leading "1")
+        https://host/sharing/link?surl=<surl>   (query form, no leading "1")
+    We always return the bare `surl` (no leading "1") because that's what the
+    `share/list` API expects in the `shorturl` parameter.
+    """
     parsed = urlparse(url)
     qs = parse_qs(parsed.query)
     if "surl" in qs and qs["surl"]:
-        return qs["surl"][0]
+        s = qs["surl"][0]
+        # Some share URLs put the leading "1" into the query form too.
+        return s[1:] if s.startswith("1") else s
     if "/s/" in parsed.path:
         tail = parsed.path.split("/s/", 1)[1]
         tail = tail.split("/")[0].split("?")[0]
@@ -82,18 +110,60 @@ def _extract_surl(url: str) -> str:
 
 
 def _resolve_share_page(
-    sess: requests.Session, url: str
+    sess: requests.Session, original_url: str, surl: str
 ) -> Tuple[str, str]:
-    """Follow redirects to the canonical share page; return (final_url, html)."""
+    """Fetch the canonical share landing page and return (final_url, html).
+
+    Terabox now redirects all `/s/<surl>` URLs to `/error/404.html`, so we
+    skip that path entirely and hit `/sharing/link?surl=<surl>` directly.
+    We try several mirror hosts in turn — if one returns a page that doesn't
+    contain the auth tokens (e.g. due to a regional block or temporary
+    error), we fall through to the next.
+    """
+    # Try the host the user gave us first, then the known mirrors.
+    user_host = ""
     try:
-        resp = sess.get(url, timeout=DEFAULT_TIMEOUT, allow_redirects=True)
-    except requests.RequestException as e:
-        raise TeraboxError(f"Network error fetching share page: {e}") from e
-    if resp.status_code >= 400:
-        raise TeraboxError(
-            f"Share page returned HTTP {resp.status_code}. The link may be invalid or removed."
-        )
-    return resp.url, resp.text
+        user_host = "https://" + (urlparse(original_url).netloc or "")
+        if user_host == "https://":
+            user_host = ""
+    except Exception:
+        user_host = ""
+
+    candidates: List[str] = []
+    if user_host and user_host not in TERABOX_HOSTS:
+        candidates.append(user_host)
+    candidates.extend(TERABOX_HOSTS)
+
+    last_error: Optional[str] = None
+    for host in candidates:
+        share_url = f"{host}/sharing/link?surl={surl}"
+        try:
+            resp = sess.get(
+                share_url, timeout=DEFAULT_TIMEOUT, allow_redirects=True
+            )
+        except requests.RequestException as e:
+            last_error = f"network error from {host}: {e}"
+            log.warning("Share page fetch failed for %s: %s", share_url, e)
+            continue
+
+        if resp.status_code >= 400:
+            last_error = f"{host} returned HTTP {resp.status_code}"
+            log.warning(last_error)
+            continue
+
+        # The share landing page must contain the inline `fn("<jsToken>")`
+        # call. If it doesn't, the share is private/expired/removed or this
+        # mirror is serving an error/captcha page.
+        if "fn%28%22" in resp.text or "jsToken" in resp.text:
+            return resp.url, resp.text
+
+        last_error = f"{host} did not include auth tokens (share may be private/expired)"
+        log.warning(last_error)
+
+    raise TeraboxError(
+        "Could not extract auth tokens from the share page. "
+        "The link may be private, expired, or require login cookies."
+    )
 
 
 def _extract_tokens(html: str) -> Dict[str, str]:
@@ -155,24 +225,25 @@ def resolve(url: str, cookie: Optional[str] = None) -> List[Dict[str, Any]]:
     if not url or not isinstance(url, str):
         raise TeraboxError("A Terabox share URL is required.")
 
+    url = url.strip()
     sess = _build_session(cookie)
-    final_url, html = _resolve_share_page(sess, url.strip())
-
-    surl = ""
-    # Prefer surl from final URL query; fallback to original.
-    try:
-        surl = _extract_surl(final_url)
-    except TeraboxError:
-        pass
-    if not surl:
-        surl = _extract_surl(url)
+    surl = _extract_surl(url)
+    final_url, html = _resolve_share_page(sess, url, surl)
 
     tokens = _extract_tokens(html)
-    if not tokens["jsToken"] or not tokens["logid"]:
+    if not tokens["jsToken"]:
+        # _resolve_share_page already filters out pages without jsToken, so
+        # this is a defensive fallback.
         raise TeraboxError(
             "Could not extract auth tokens from the share page. "
             "The link may be private, expired, or require login cookies."
         )
+
+    # `dp-logid` is no longer embedded in the share page HTML on the new
+    # Terabox frontend. The API still requires *some* value for the field,
+    # but accepts any opaque string. Use a millisecond timestamp as a
+    # browser-like log id; this matches what real browsers send.
+    logid = tokens["logid"] or str(int(time.time() * 1000))
 
     params = {
         "app_id": "250528",
@@ -180,7 +251,7 @@ def resolve(url: str, cookie: Optional[str] = None) -> List[Dict[str, Any]]:
         "channel": "dubox",
         "clienttype": "0",
         "jsToken": tokens["jsToken"],
-        "dp-logid": tokens["logid"],
+        "dp-logid": logid,
         "page": "1",
         "num": "20",
         "by": "name",
@@ -190,30 +261,49 @@ def resolve(url: str, cookie: Optional[str] = None) -> List[Dict[str, Any]]:
         "root": "1,",
     }
 
-    list_url = f"{TERABOX_API_HOST}/share/list"
-    try:
-        api_resp = sess.get(
-            list_url, params=params, timeout=DEFAULT_TIMEOUT, allow_redirects=True
-        )
-    except requests.RequestException as e:
-        raise TeraboxError(f"Network error calling share/list: {e}") from e
+    # The same jsToken works on every Terabox mirror, so try each in turn
+    # and return the first non-error response.
+    final_host = "https://" + (urlparse(final_url).netloc or "www.terabox.com")
+    api_hosts = [final_host] + [h for h in TERABOX_HOSTS if h != final_host]
 
-    try:
-        data = api_resp.json()
-    except ValueError as e:
-        raise TeraboxError("Terabox returned an unparseable response.") from e
+    last_msg = ""
+    sess.headers["Referer"] = final_url
+    for host in api_hosts:
+        list_url = f"{host}/share/list"
+        try:
+            api_resp = sess.get(
+                list_url,
+                params=params,
+                timeout=DEFAULT_TIMEOUT,
+                allow_redirects=True,
+            )
+        except requests.RequestException as e:
+            last_msg = f"network error calling {host}: {e}"
+            log.warning(last_msg)
+            continue
 
-    errno = data.get("errno")
-    if errno not in (0, None):
-        msg = data.get("errmsg") or f"errno={errno}"
-        # 9019 / 105 are common "needs verification" / invalid share errors.
-        raise TeraboxError(f"Terabox API error: {msg}")
+        try:
+            data = api_resp.json()
+        except ValueError:
+            last_msg = f"{host} returned non-JSON response"
+            log.warning("share/list non-JSON from %s: %s", host, api_resp.text[:200])
+            continue
 
-    items = data.get("list") or []
-    if not items:
-        raise TeraboxError("Share contains no files (or could not be read).")
+        errno = data.get("errno")
+        if errno in (0, None) and data.get("list"):
+            return [_format_file(i) for i in data["list"]]
 
-    return [_format_file(i) for i in items]
+        # Capture the most informative error and try the next host.
+        last_msg = data.get("errmsg") or f"errno={errno}"
+        log.info("share/list error from %s: %s", host, last_msg)
+
+        # Some errors are terminal — no point trying other mirrors.
+        if errno in (105, 9019, -21, -130):
+            break
+
+    raise TeraboxError(
+        f"Terabox API error: {last_msg or 'unknown error'}"
+    )
 
 
 def stream_download(
