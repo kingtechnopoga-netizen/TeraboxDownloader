@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Terabox Downloader</title>
+    <meta name="description" content="Paste a Terabox share link and get direct download links." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%AC%87%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            background:
+                radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.18), transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(56, 189, 248, 0.16), transparent 45%),
+                #0b1020;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .spin {
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-slate-100 font-sans min-h-screen">
+    <header class="max-w-4xl mx-auto px-4 pt-8 pb-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+            </div>
+            <h1 class="text-lg font-bold tracking-tight">Terabox Downloader</h1>
+        </div>
+        <a href="https://github.com" target="_blank" rel="noopener" class="text-xs text-slate-400 hover:text-slate-200 transition">v1.0</a>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 pb-20">
+        <section class="text-center pt-6 pb-10">
+            <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 text-transparent bg-clip-text">
+                Download from Terabox, fast.
+            </h2>
+            <p class="mt-3 text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+                Paste a Terabox share link below. We&rsquo;ll fetch the file list and generate direct download links.
+            </p>
+        </section>
+
+        <section class="glass rounded-2xl p-4 sm:p-6 shadow-2xl">
+            <form id="form" class="flex flex-col gap-3">
+                <label for="url" class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Terabox share link</label>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input
+                        id="url"
+                        name="url"
+                        type="url"
+                        required
+                        placeholder="https://www.terabox.com/s/..."
+                        class="flex-1 bg-slate-900/60 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-xl px-4 py-3 outline-none placeholder-slate-500 transition"
+                    />
+                    <button
+                        id="submit"
+                        type="submit"
+                        class="bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-400 hover:to-sky-400 active:scale-[.98] transition rounded-xl px-5 py-3 font-semibold shadow-lg shadow-indigo-900/40 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        <span id="submitLabel">Fetch files</span>
+                        <svg id="submitSpinner" class="hidden w-4 h-4 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                        </svg>
+                    </button>
+                </div>
+
+                <details class="mt-2 group">
+                    <summary class="cursor-pointer text-xs text-slate-400 hover:text-slate-200 select-none flex items-center gap-1">
+                        <svg class="w-3 h-3 transition group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                        Advanced: paste cookie (optional, only if a link fails)
+                    </summary>
+                    <div class="mt-3">
+                        <input
+                            id="cookie"
+                            name="cookie"
+                            type="text"
+                            placeholder="ndus=...; (paste your Terabox cookie if needed)"
+                            class="w-full bg-slate-900/60 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-xl px-3 py-2 text-sm outline-none placeholder-slate-500 transition"
+                        />
+                        <p class="mt-2 text-xs text-slate-500">
+                            Some Terabox shares require a logged-in cookie to actually download the file. If the proxy download fails with 403, log into Terabox in your browser, copy the <code class="text-slate-300">ndus</code> cookie, and paste it here.
+                        </p>
+                    </div>
+                </details>
+            </form>
+        </section>
+
+        <section id="error" class="hidden mt-5 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 text-sm"></section>
+
+        <section id="results" class="mt-6 space-y-3"></section>
+
+        <section id="empty" class="mt-12 text-center text-slate-500 text-sm">
+            <p>No files yet. Paste a share link above to get started.</p>
+        </section>
+
+        <footer class="mt-16 text-center text-xs text-slate-500">
+            <p>For personal use. Respect content owners and Terabox terms of service.</p>
+        </footer>
+    </main>
+
+    <template id="fileCardTpl">
+        <article class="glass rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:border-indigo-500/40 transition">
+            <div class="w-full sm:w-28 h-28 sm:h-20 rounded-xl bg-slate-800/80 flex items-center justify-center overflow-hidden shrink-0">
+                <img class="thumb hidden w-full h-full object-cover" alt="" />
+                <svg class="placeholder w-8 h-8 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0 w-full">
+                <h3 class="filename font-semibold text-slate-100 truncate" title=""></h3>
+                <div class="mt-1 text-xs text-slate-400 flex items-center gap-3">
+                    <span class="size"></span>
+                    <span class="dirBadge hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-200 border border-amber-500/30">Folder</span>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <a class="proxyBtn inline-flex items-center justify-center gap-1.5 bg-indigo-500 hover:bg-indigo-400 active:scale-[.98] transition rounded-xl px-4 py-2 text-sm font-semibold shadow-lg shadow-indigo-900/40">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download
+                </a>
+                <a class="directBtn inline-flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-[.98] transition rounded-xl px-4 py-2 text-sm font-medium" target="_blank" rel="noopener">
+                    Direct link
+                </a>
+            </div>
+        </article>
+    </template>
+
+    <script>
+        (function () {
+            const form = document.getElementById('form');
+            const urlInput = document.getElementById('url');
+            const cookieInput = document.getElementById('cookie');
+            const errorBox = document.getElementById('error');
+            const resultsBox = document.getElementById('results');
+            const emptyBox = document.getElementById('empty');
+            const submitBtn = document.getElementById('submit');
+            const submitLabel = document.getElementById('submitLabel');
+            const submitSpinner = document.getElementById('submitSpinner');
+            const tpl = document.getElementById('fileCardTpl');
+
+            function setLoading(loading) {
+                submitBtn.disabled = loading;
+                submitLabel.textContent = loading ? 'Fetching…' : 'Fetch files';
+                submitSpinner.classList.toggle('hidden', !loading);
+            }
+
+            function showError(msg) {
+                errorBox.textContent = msg;
+                errorBox.classList.remove('hidden');
+            }
+
+            function clearError() {
+                errorBox.textContent = '';
+                errorBox.classList.add('hidden');
+            }
+
+            function clearResults() {
+                resultsBox.innerHTML = '';
+                emptyBox.classList.remove('hidden');
+            }
+
+            function buildProxyUrl(file, cookie) {
+                const params = new URLSearchParams();
+                params.set('url', file.download_link);
+                params.set('filename', file.filename || 'download');
+                if (cookie) params.set('cookie', cookie);
+                return `/api/proxy?${params.toString()}`;
+            }
+
+            function renderFiles(files, cookie) {
+                resultsBox.innerHTML = '';
+                if (!files.length) {
+                    emptyBox.classList.remove('hidden');
+                    emptyBox.querySelector('p').textContent = 'No files in this share.';
+                    return;
+                }
+                emptyBox.classList.add('hidden');
+
+                for (const file of files) {
+                    const node = tpl.content.cloneNode(true);
+                    const card = node.querySelector('article');
+                    const thumb = node.querySelector('.thumb');
+                    const placeholder = node.querySelector('.placeholder');
+                    const filename = node.querySelector('.filename');
+                    const size = node.querySelector('.size');
+                    const dirBadge = node.querySelector('.dirBadge');
+                    const proxyBtn = node.querySelector('.proxyBtn');
+                    const directBtn = node.querySelector('.directBtn');
+
+                    filename.textContent = file.filename;
+                    filename.title = file.filename;
+                    size.textContent = file.size || '';
+
+                    if (file.thumbnail) {
+                        thumb.src = file.thumbnail;
+                        thumb.alt = file.filename;
+                        thumb.onload = () => {
+                            thumb.classList.remove('hidden');
+                            placeholder.classList.add('hidden');
+                        };
+                    }
+
+                    if (file.is_directory) {
+                        dirBadge.classList.remove('hidden');
+                        proxyBtn.classList.add('opacity-50', 'pointer-events-none');
+                        directBtn.classList.add('opacity-50', 'pointer-events-none');
+                        proxyBtn.removeAttribute('href');
+                        directBtn.removeAttribute('href');
+                    } else if (file.download_link) {
+                        proxyBtn.href = buildProxyUrl(file, cookie);
+                        proxyBtn.setAttribute('download', file.filename || 'download');
+                        directBtn.href = file.download_link;
+                    } else {
+                        proxyBtn.classList.add('opacity-50', 'pointer-events-none');
+                        directBtn.classList.add('opacity-50', 'pointer-events-none');
+                    }
+
+                    resultsBox.appendChild(node);
+                }
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearError();
+                clearResults();
+                setLoading(true);
+
+                const url = urlInput.value.trim();
+                const cookie = cookieInput.value.trim();
+
+                try {
+                    const resp = await fetch('/api/info', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url, cookie: cookie || undefined }),
+                    });
+                    const data = await resp.json();
+
+                    if (!resp.ok || data.error) {
+                        showError(data.error || `Request failed (${resp.status})`);
+                        return;
+                    }
+
+                    renderFiles(data.files || [], cookie);
+                } catch (err) {
+                    showError('Network error: ' + (err && err.message ? err.message : err));
+                } finally {
+                    setLoading(false);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
