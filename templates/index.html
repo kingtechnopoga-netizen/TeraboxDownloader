@@ -2,159 +2,504 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0b1a" />
     <title>Terabox Downloader</title>
-    <meta name="description" content="Paste a Terabox share link and get direct download links." />
+    <meta name="description" content="Paste a Terabox share link and get direct download links — fast, clean, and free." />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23a78bfa'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cpath d='M50 22 L50 62 M32 48 L50 66 L68 48' fill='none' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='28' y='72' width='44' height='8' rx='4' fill='white'/%3E%3C/svg%3E" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%AC%87%EF%B8%8F%3C/text%3E%3C/svg%3E" />
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+                    },
+                    colors: {
+                        ink: {
+                            900: '#08081a',
+                            800: '#0f0f24',
+                            700: '#171732',
+                            600: '#1f1f44',
+                        },
+                    },
+                    animation: {
+                        'fade-up': 'fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
+                        'fade-in': 'fadeIn 0.4s ease both',
+                        'shimmer': 'shimmer 2s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'blob': 'blob 18s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeUp: {
+                            '0%': { opacity: '0', transform: 'translateY(12px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-200% 0' },
+                            '100%': { backgroundPosition: '200% 0' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-8px)' },
+                        },
+                        blob: {
+                            '0%, 100%': { transform: 'translate(0,0) scale(1)' },
+                            '33%': { transform: 'translate(30px,-40px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px,20px) scale(0.95)' },
+                        },
                     },
                 },
             },
         };
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
     <style>
-        body {
-            background:
-                radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.18), transparent 40%),
-                radial-gradient(circle at 85% 80%, rgba(56, 189, 248, 0.16), transparent 45%),
-                #0b1020;
+        :root {
+            color-scheme: dark;
         }
+        html, body {
+            background: #06061a;
+        }
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            font-feature-settings: 'cv11', 'ss01', 'ss03';
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        /* Animated gradient background blobs */
+        .bg-deco {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.55;
+            will-change: transform;
+        }
+        .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; max-width: 600px; max-height: 600px; background: #6d28d9; animation: blob 20s ease-in-out infinite; }
+        .blob-2 { bottom: -15%; right: -10%; width: 55vw; height: 55vw; max-width: 700px; max-height: 700px; background: #0ea5e9; animation: blob 24s ease-in-out infinite reverse; }
+        .blob-3 { top: 30%; right: 20%; width: 30vw; height: 30vw; max-width: 400px; max-height: 400px; background: #ec4899; opacity: 0.35; animation: blob 28s ease-in-out infinite; }
+
+        /* Subtle dot pattern overlay */
+        .grid-pattern {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+            background-size: 24px 24px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+            pointer-events: none;
+        }
+
+        /* Glass card */
         .glass {
             background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(16px) saturate(140%);
+            -webkit-backdrop-filter: blur(16px) saturate(140%);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .spin {
-            animation: spin 0.8s linear infinite;
+        .glass-strong {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.10);
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+
+        /* Gradient border (uses background-clip trick) */
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(rgba(15,15,36,0.85), rgba(15,15,36,0.85)) padding-box,
+                        linear-gradient(135deg, rgba(167,139,250,0.6), rgba(56,189,248,0.6), rgba(236,72,153,0.4)) border-box;
+            border: 1px solid transparent;
         }
+
+        /* Shimmer for skeleton loading */
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s linear infinite;
+        }
+
+        /* Smooth focus ring */
+        input:focus-visible, button:focus-visible, a:focus-visible {
+            outline: none;
+        }
+        .focus-ring:focus-within {
+            box-shadow: 0 0 0 2px rgba(167,139,250,0.4), 0 0 0 4px rgba(167,139,250,0.15);
+            border-color: rgba(167,139,250,0.7);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+
+        /* Spinner */
+        .spin { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Reduce motion */
+        @media (prefers-reduced-motion: reduce) {
+            .blob, .animate-fade-up, .animate-fade-in, .animate-shimmer, .animate-float, .animate-blob, .shimmer, .spin {
+                animation: none !important;
+            }
+        }
+
+        /* iOS safe area padding */
+        .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+        .safe-top { padding-top: max(1rem, env(safe-area-inset-top)); }
+
+        /* Press effect for buttons (better than scale on mobile) */
+        .press { transition: transform 0.12s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+        .press:active { transform: scale(0.97); }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: max(1.25rem, env(safe-area-inset-bottom));
+            transform: translateX(-50%) translateY(120%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 60;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
-<body class="text-slate-100 font-sans min-h-screen">
-    <header class="max-w-4xl mx-auto px-4 pt-8 pb-4 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-            </div>
-            <h1 class="text-lg font-bold tracking-tight">Terabox Downloader</h1>
+<body class="text-slate-100 font-sans antialiased">
+
+    <!-- Decorative background -->
+    <div class="bg-deco" aria-hidden="true">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div class="grid-pattern" aria-hidden="true"></div>
+
+    <!-- Header -->
+    <header class="safe-top sticky top-0 z-30 backdrop-blur-md bg-ink-900/40 border-b border-white/5">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2.5 group">
+                <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-sky-400 flex items-center justify-center shadow-lg shadow-violet-900/40 group-hover:shadow-violet-900/60 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v14"/>
+                        <path d="m6 12 6 6 6-6"/>
+                        <rect x="4" y="20" width="16" height="2" rx="1" fill="currentColor" stroke="none"/>
+                    </svg>
+                </div>
+                <div class="leading-tight">
+                    <div class="font-bold tracking-tight text-[15px]">Terabox<span class="text-violet-300">.</span>dl</div>
+                    <div class="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-medium">downloader</div>
+                </div>
+            </a>
+
+            <nav class="flex items-center gap-1">
+                <a href="#how" class="hidden sm:inline-flex px-3 py-1.5 text-sm text-slate-300 hover:text-white rounded-lg hover:bg-white/5 transition">How it works</a>
+                <a href="https://github.com/kingtechnopoga-netizen/TeraboxDownloader" target="_blank" rel="noopener" aria-label="GitHub" class="inline-flex items-center justify-center w-9 h-9 text-slate-300 hover:text-white rounded-lg hover:bg-white/5 transition">
+                    <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.73-1.53-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.49 3.14-1.18 3.14-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.13v3.16c0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+                </a>
+            </nav>
         </div>
-        <a href="https://github.com" target="_blank" rel="noopener" class="text-xs text-slate-400 hover:text-slate-200 transition">v1.0</a>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 pb-20">
-        <section class="text-center pt-6 pb-10">
-            <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300 text-transparent bg-clip-text">
-                Download from Terabox, fast.
-            </h2>
-            <p class="mt-3 text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
-                Paste a Terabox share link below. We&rsquo;ll fetch the file list and generate direct download links.
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-14 pb-12">
+
+        <!-- Hero -->
+        <section class="text-center max-w-3xl mx-auto animate-fade-up">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-slate-300 mb-5 sm:mb-7">
+                <span class="relative flex w-1.5 h-1.5">
+                    <span class="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
+                    <span class="relative inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                </span>
+                <span>Free &middot; No signup &middot; No ads</span>
+            </div>
+
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05]">
+                Download from
+                <span class="relative inline-block">
+                    <span class="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-sky-300 text-transparent bg-clip-text">Terabox</span>
+                    <svg class="absolute -bottom-1 sm:-bottom-2 left-0 w-full h-2 sm:h-3 text-violet-400/60" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
+                        <path d="M0 5 Q 25 0, 50 4 T 100 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <br class="hidden sm:block"/>
+                in <span class="text-white">seconds</span>.
+            </h1>
+
+            <p class="mt-5 sm:mt-7 text-base sm:text-lg text-slate-400 max-w-xl mx-auto leading-relaxed">
+                Paste a share link &mdash; we&rsquo;ll fetch the file list and give you clean download links. No popups, no countdown timers.
             </p>
         </section>
 
-        <section class="glass rounded-2xl p-4 sm:p-6 shadow-2xl">
-            <form id="form" class="flex flex-col gap-3">
-                <label for="url" class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Terabox share link</label>
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <input
-                        id="url"
-                        name="url"
-                        type="url"
-                        required
-                        placeholder="https://www.terabox.com/s/..."
-                        class="flex-1 bg-slate-900/60 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-xl px-4 py-3 outline-none placeholder-slate-500 transition"
-                    />
-                    <button
-                        id="submit"
-                        type="submit"
-                        class="bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-400 hover:to-sky-400 active:scale-[.98] transition rounded-xl px-5 py-3 font-semibold shadow-lg shadow-indigo-900/40 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                        <span id="submitLabel">Fetch files</span>
-                        <svg id="submitSpinner" class="hidden w-4 h-4 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                        </svg>
-                    </button>
+        <!-- Input card -->
+        <section class="mt-10 sm:mt-14 animate-fade-up" style="animation-delay: 0.1s">
+            <div class="gradient-border rounded-3xl p-1.5 shadow-2xl shadow-violet-950/40">
+                <div class="rounded-[20px] bg-ink-900/80 backdrop-blur-xl p-4 sm:p-6">
+                    <form id="form" class="flex flex-col gap-3">
+                        <label for="url" class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                            Share link
+                        </label>
+
+                        <div class="focus-ring flex flex-col sm:flex-row gap-2.5 p-1.5 rounded-2xl bg-ink-800/80 border border-white/10 transition-all">
+                            <div class="flex items-center flex-1 px-3 sm:px-4 gap-2.5 min-w-0">
+                                <svg class="w-5 h-5 text-slate-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                                </svg>
+                                <input
+                                    id="url"
+                                    name="url"
+                                    type="url"
+                                    required
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    inputmode="url"
+                                    placeholder="https://www.terabox.com/s/..."
+                                    class="flex-1 min-w-0 bg-transparent py-3 sm:py-3.5 outline-none placeholder-slate-600 text-[15px] sm:text-base"
+                                />
+                                <button type="button" id="pasteBtn" aria-label="Paste from clipboard" title="Paste"
+                                    class="press hidden sm:inline-flex items-center justify-center w-9 h-9 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="8" y="2" width="8" height="4" rx="1"/>
+                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                    </svg>
+                                </button>
+                                <button type="button" id="clearBtn" aria-label="Clear" title="Clear"
+                                    class="press hidden inline-flex items-center justify-center w-9 h-9 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 6 6 18M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <button
+                                id="submit"
+                                type="submit"
+                                class="press relative inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-sky-500 hover:brightness-110 rounded-xl px-5 py-3 sm:py-3.5 font-semibold shadow-lg shadow-violet-900/40 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 text-[15px]"
+                            >
+                                <span id="submitLabel">Get files</span>
+                                <svg id="submitArrow" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12h14M13 5l7 7-7 7"/>
+                                </svg>
+                                <svg id="submitSpinner" class="hidden w-4 h-4 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <details class="group/details mt-1">
+                            <summary class="cursor-pointer text-xs text-slate-400 hover:text-slate-200 select-none flex items-center gap-1.5 px-1 py-1 transition w-fit">
+                                <svg class="w-3 h-3 transition-transform group-open/details:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                                <span>Advanced &mdash; cookie (only if a download fails)</span>
+                            </summary>
+                            <div class="mt-3 pl-1">
+                                <input
+                                    id="cookie"
+                                    name="cookie"
+                                    type="text"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    placeholder="ndus=...; (paste your Terabox cookie)"
+                                    class="w-full bg-ink-800/80 border border-white/10 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20 rounded-xl px-3.5 py-2.5 text-sm font-mono outline-none placeholder-slate-600 transition"
+                                />
+                                <p class="mt-2 text-[11px] text-slate-500 leading-relaxed">
+                                    Some Terabox shares need an authenticated <code class="font-mono text-slate-300">ndus</code> cookie. Log into Terabox in your browser, copy the cookie, and paste it here.
+                                </p>
+                            </div>
+                        </details>
+                    </form>
                 </div>
+            </div>
 
-                <details class="mt-2 group">
-                    <summary class="cursor-pointer text-xs text-slate-400 hover:text-slate-200 select-none flex items-center gap-1">
-                        <svg class="w-3 h-3 transition group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                        Advanced: paste cookie (optional, only if a link fails)
-                    </summary>
-                    <div class="mt-3">
-                        <input
-                            id="cookie"
-                            name="cookie"
-                            type="text"
-                            placeholder="ndus=...; (paste your Terabox cookie if needed)"
-                            class="w-full bg-slate-900/60 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-xl px-3 py-2 text-sm outline-none placeholder-slate-500 transition"
-                        />
-                        <p class="mt-2 text-xs text-slate-500">
-                            Some Terabox shares require a logged-in cookie to actually download the file. If the proxy download fails with 403, log into Terabox in your browser, copy the <code class="text-slate-300">ndus</code> cookie, and paste it here.
-                        </p>
+            <!-- Trust strip -->
+            <div class="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-wider text-slate-500">
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    No login
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    No tracking
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    Open source
+                </span>
+            </div>
+        </section>
+
+        <!-- Error -->
+        <section id="error" class="hidden mt-6 p-4 rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur text-red-200 text-sm flex items-start gap-3 animate-fade-in">
+            <svg class="w-5 h-5 shrink-0 mt-0.5 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div id="errorMsg" class="flex-1"></div>
+            <button id="errorClose" class="text-red-300 hover:text-white transition" aria-label="Dismiss">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </section>
+
+        <!-- Skeleton (shown while loading) -->
+        <section id="skeleton" class="hidden mt-6 space-y-3">
+            <template id="skelTpl">
+                <div class="glass rounded-2xl p-4 sm:p-5 flex gap-4 items-center">
+                    <div class="shimmer rounded-xl w-20 h-20 sm:w-24 sm:h-24 shrink-0"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="shimmer h-4 rounded w-3/4"></div>
+                        <div class="shimmer h-3 rounded w-1/4"></div>
                     </div>
-                </details>
-            </form>
+                    <div class="shimmer rounded-xl w-24 h-10 hidden sm:block"></div>
+                </div>
+            </template>
         </section>
 
-        <section id="error" class="hidden mt-5 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 text-sm"></section>
+        <!-- Results -->
+        <section id="resultsHeader" class="hidden mt-10 mb-3 flex items-end justify-between gap-3 animate-fade-in">
+            <div>
+                <h2 class="text-lg sm:text-xl font-bold tracking-tight">Files found</h2>
+                <p id="resultsCount" class="text-xs text-slate-500 mt-0.5"></p>
+            </div>
+        </section>
+        <section id="results" class="space-y-3"></section>
 
-        <section id="results" class="mt-6 space-y-3"></section>
-
-        <section id="empty" class="mt-12 text-center text-slate-500 text-sm">
-            <p>No files yet. Paste a share link above to get started.</p>
+        <!-- Empty state -->
+        <section id="empty" class="mt-12 sm:mt-20 text-center animate-fade-in">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 border border-white/10 mb-4 animate-float">
+                <svg class="w-8 h-8 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <path d="M12 18v-6"/>
+                    <path d="m9 15 3 3 3-3"/>
+                </svg>
+            </div>
+            <p class="text-slate-400 text-sm">Paste a share link above to see your files.</p>
         </section>
 
-        <footer class="mt-16 text-center text-xs text-slate-500">
-            <p>For personal use. Respect content owners and Terabox terms of service.</p>
+        <!-- How it works -->
+        <section id="how" class="mt-20 sm:mt-28 scroll-mt-20">
+            <div class="text-center max-w-2xl mx-auto mb-10">
+                <div class="text-xs uppercase tracking-[0.2em] text-violet-300/80 font-semibold mb-3">How it works</div>
+                <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">Three steps. That&rsquo;s it.</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass rounded-2xl p-5 sm:p-6 hover:border-white/20 transition">
+                    <div class="w-10 h-10 rounded-xl bg-violet-500/15 text-violet-300 flex items-center justify-center font-bold mb-4 border border-violet-400/20">1</div>
+                    <h3 class="font-semibold text-slate-100 mb-1">Paste a link</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Any Terabox share URL &mdash; <code class="font-mono text-xs text-slate-300">terabox.com</code>, <code class="font-mono text-xs text-slate-300">1024terabox.com</code>, <code class="font-mono text-xs text-slate-300">terasharelink.com</code>.</p>
+                </div>
+                <div class="glass rounded-2xl p-5 sm:p-6 hover:border-white/20 transition">
+                    <div class="w-10 h-10 rounded-xl bg-fuchsia-500/15 text-fuchsia-300 flex items-center justify-center font-bold mb-4 border border-fuchsia-400/20">2</div>
+                    <h3 class="font-semibold text-slate-100 mb-1">See the files</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">We resolve the share and list every file with its name, size, and thumbnail.</p>
+                </div>
+                <div class="glass rounded-2xl p-5 sm:p-6 hover:border-white/20 transition">
+                    <div class="w-10 h-10 rounded-xl bg-sky-500/15 text-sky-300 flex items-center justify-center font-bold mb-4 border border-sky-400/20">3</div>
+                    <h3 class="font-semibold text-slate-100 mb-1">Download</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Click <span class="text-white font-medium">Download</span> for a clean filename, or <span class="text-white font-medium">Direct link</span> to grab the raw URL.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="safe-bottom mt-20 sm:mt-28 pt-8 border-t border-white/5 text-center">
+            <p class="text-xs text-slate-500">
+                For personal use. Respect content owners and Terabox terms of service.
+            </p>
+            <p class="mt-2 text-[11px] text-slate-600">
+                Made with care &middot; <a href="https://github.com/kingtechnopoga-netizen/TeraboxDownloader" target="_blank" rel="noopener" class="hover:text-slate-400 underline-offset-4 hover:underline transition">View source</a>
+            </p>
         </footer>
     </main>
 
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <div class="px-4 py-2.5 rounded-full bg-ink-800/95 backdrop-blur border border-white/10 shadow-2xl text-sm flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <span id="toastMsg">Copied</span>
+        </div>
+    </div>
+
+    <!-- File card template -->
     <template id="fileCardTpl">
-        <article class="glass rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:border-indigo-500/40 transition">
-            <div class="w-full sm:w-28 h-28 sm:h-20 rounded-xl bg-slate-800/80 flex items-center justify-center overflow-hidden shrink-0">
-                <img class="thumb hidden w-full h-full object-cover" alt="" />
-                <svg class="placeholder w-8 h-8 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                </svg>
-            </div>
-            <div class="flex-1 min-w-0 w-full">
-                <h3 class="filename font-semibold text-slate-100 truncate" title=""></h3>
-                <div class="mt-1 text-xs text-slate-400 flex items-center gap-3">
-                    <span class="size"></span>
-                    <span class="dirBadge hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-200 border border-amber-500/30">Folder</span>
+        <article class="group glass rounded-2xl p-3.5 sm:p-5 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center hover:border-white/15 hover:bg-white/[0.06] transition animate-fade-up">
+            <div class="relative w-full sm:w-24 sm:h-24 h-40 rounded-xl bg-gradient-to-br from-ink-700 to-ink-800 flex items-center justify-center overflow-hidden shrink-0 border border-white/5">
+                <img class="thumb hidden absolute inset-0 w-full h-full object-cover" alt="" loading="lazy" />
+                <div class="placeholder flex items-center justify-center w-full h-full">
+                    <svg class="placeholderIcon w-10 h-10 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                </div>
+                <div class="dirOverlay hidden absolute inset-0 flex items-center justify-center bg-amber-500/10 backdrop-blur-sm">
+                    <svg class="w-10 h-10 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
                 </div>
             </div>
-            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <a class="proxyBtn inline-flex items-center justify-center gap-1.5 bg-indigo-500 hover:bg-indigo-400 active:scale-[.98] transition rounded-xl px-4 py-2 text-sm font-semibold shadow-lg shadow-indigo-900/40">
+
+            <div class="flex-1 min-w-0">
+                <h3 class="filename font-semibold text-[15px] sm:text-base text-slate-100 break-words sm:truncate" title=""></h3>
+                <div class="mt-1 text-xs text-slate-400 flex items-center gap-2 flex-wrap">
+                    <span class="size font-mono"></span>
+                    <span class="dirBadge hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-200 border border-amber-500/30 text-[10px] uppercase tracking-wider font-medium">Folder</span>
+                    <span class="ext hidden inline-flex items-center px-1.5 py-0.5 rounded bg-white/5 text-slate-300 border border-white/10 text-[10px] uppercase tracking-wider font-mono"></span>
+                </div>
+            </div>
+
+            <div class="flex flex-row gap-2 w-full sm:w-auto">
+                <a class="proxyBtn press flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-violet-500 to-sky-500 hover:brightness-110 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-lg shadow-violet-900/30">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="7 10 12 15 17 10"/>
                         <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
-                    Download
+                    <span>Download</span>
                 </a>
-                <a class="directBtn inline-flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-[.98] transition rounded-xl px-4 py-2 text-sm font-medium" target="_blank" rel="noopener">
-                    Direct link
+                <a class="directBtn press inline-flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2.5 text-sm font-medium" target="_blank" rel="noopener" aria-label="Open direct link" title="Direct link">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
                 </a>
+                <button class="copyBtn press inline-flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2.5 text-sm font-medium" type="button" aria-label="Copy direct link" title="Copy link">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                </button>
             </div>
         </article>
     </template>
@@ -165,32 +510,81 @@
             const urlInput = document.getElementById('url');
             const cookieInput = document.getElementById('cookie');
             const errorBox = document.getElementById('error');
+            const errorMsg = document.getElementById('errorMsg');
+            const errorClose = document.getElementById('errorClose');
             const resultsBox = document.getElementById('results');
+            const resultsHeader = document.getElementById('resultsHeader');
+            const resultsCount = document.getElementById('resultsCount');
             const emptyBox = document.getElementById('empty');
+            const skeletonBox = document.getElementById('skeleton');
+            const skelTpl = document.getElementById('skelTpl');
             const submitBtn = document.getElementById('submit');
             const submitLabel = document.getElementById('submitLabel');
+            const submitArrow = document.getElementById('submitArrow');
             const submitSpinner = document.getElementById('submitSpinner');
             const tpl = document.getElementById('fileCardTpl');
+            const pasteBtn = document.getElementById('pasteBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+
+            let toastTimer;
+
+            function showToast(msg) {
+                toastMsg.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+            }
 
             function setLoading(loading) {
                 submitBtn.disabled = loading;
-                submitLabel.textContent = loading ? 'Fetching…' : 'Fetch files';
+                submitLabel.textContent = loading ? 'Fetching' : 'Get files';
+                submitArrow.classList.toggle('hidden', loading);
                 submitSpinner.classList.toggle('hidden', !loading);
+                if (loading) {
+                    showSkeleton(3);
+                } else {
+                    hideSkeleton();
+                }
             }
 
             function showError(msg) {
-                errorBox.textContent = msg;
+                errorMsg.textContent = msg;
                 errorBox.classList.remove('hidden');
             }
 
             function clearError() {
-                errorBox.textContent = '';
                 errorBox.classList.add('hidden');
+                errorMsg.textContent = '';
             }
 
             function clearResults() {
                 resultsBox.innerHTML = '';
-                emptyBox.classList.remove('hidden');
+                resultsHeader.classList.add('hidden');
+            }
+
+            function showSkeleton(n) {
+                skeletonBox.innerHTML = '';
+                for (let i = 0; i < n; i++) {
+                    skeletonBox.appendChild(skelTpl.content.cloneNode(true));
+                }
+                skeletonBox.classList.remove('hidden');
+                emptyBox.classList.add('hidden');
+                clearResults();
+            }
+
+            function hideSkeleton() {
+                skeletonBox.classList.add('hidden');
+                skeletonBox.innerHTML = '';
+            }
+
+            function getExt(name) {
+                if (!name) return '';
+                const i = name.lastIndexOf('.');
+                if (i < 0 || i === name.length - 1) return '';
+                const ext = name.slice(i + 1);
+                return ext.length <= 5 ? ext : '';
             }
 
             function buildProxyUrl(file, cookie) {
@@ -206,11 +600,14 @@
                 if (!files.length) {
                     emptyBox.classList.remove('hidden');
                     emptyBox.querySelector('p').textContent = 'No files in this share.';
+                    resultsHeader.classList.add('hidden');
                     return;
                 }
                 emptyBox.classList.add('hidden');
+                resultsHeader.classList.remove('hidden');
+                resultsCount.textContent = `${files.length} ${files.length === 1 ? 'item' : 'items'} ready to download`;
 
-                for (const file of files) {
+                files.forEach((file, idx) => {
                     const node = tpl.content.cloneNode(true);
                     const card = node.querySelector('article');
                     const thumb = node.querySelector('.thumb');
@@ -218,40 +615,101 @@
                     const filename = node.querySelector('.filename');
                     const size = node.querySelector('.size');
                     const dirBadge = node.querySelector('.dirBadge');
+                    const dirOverlay = node.querySelector('.dirOverlay');
+                    const ext = node.querySelector('.ext');
                     const proxyBtn = node.querySelector('.proxyBtn');
                     const directBtn = node.querySelector('.directBtn');
+                    const copyBtn = node.querySelector('.copyBtn');
+
+                    card.style.animationDelay = `${idx * 60}ms`;
 
                     filename.textContent = file.filename;
                     filename.title = file.filename;
                     size.textContent = file.size || '';
 
-                    if (file.thumbnail) {
+                    const e = getExt(file.filename);
+                    if (e && !file.is_directory) {
+                        ext.textContent = e;
+                        ext.classList.remove('hidden');
+                    }
+
+                    if (file.thumbnail && !file.is_directory) {
                         thumb.src = file.thumbnail;
                         thumb.alt = file.filename;
                         thumb.onload = () => {
                             thumb.classList.remove('hidden');
                             placeholder.classList.add('hidden');
                         };
+                        thumb.onerror = () => {
+                            thumb.remove();
+                        };
                     }
 
                     if (file.is_directory) {
                         dirBadge.classList.remove('hidden');
-                        proxyBtn.classList.add('opacity-50', 'pointer-events-none');
-                        directBtn.classList.add('opacity-50', 'pointer-events-none');
-                        proxyBtn.removeAttribute('href');
-                        directBtn.removeAttribute('href');
+                        dirOverlay.classList.remove('hidden');
+                        placeholder.classList.add('hidden');
+                        [proxyBtn, directBtn, copyBtn].forEach(b => {
+                            b.classList.add('opacity-40', 'pointer-events-none');
+                            b.removeAttribute('href');
+                        });
                     } else if (file.download_link) {
                         proxyBtn.href = buildProxyUrl(file, cookie);
                         proxyBtn.setAttribute('download', file.filename || 'download');
                         directBtn.href = file.download_link;
+
+                        copyBtn.addEventListener('click', async () => {
+                            try {
+                                await navigator.clipboard.writeText(file.download_link);
+                                showToast('Direct link copied');
+                            } catch {
+                                showToast('Could not copy');
+                            }
+                        });
                     } else {
-                        proxyBtn.classList.add('opacity-50', 'pointer-events-none');
-                        directBtn.classList.add('opacity-50', 'pointer-events-none');
+                        [proxyBtn, directBtn, copyBtn].forEach(b => {
+                            b.classList.add('opacity-40', 'pointer-events-none');
+                        });
                     }
 
                     resultsBox.appendChild(node);
-                }
+                });
             }
+
+            // Paste button
+            if (pasteBtn) {
+                pasteBtn.addEventListener('click', async () => {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        if (text) {
+                            urlInput.value = text.trim();
+                            urlInput.dispatchEvent(new Event('input'));
+                            urlInput.focus();
+                        }
+                    } catch {
+                        showToast('Clipboard access denied');
+                    }
+                });
+            }
+
+            // Show/hide clear button based on input
+            urlInput.addEventListener('input', () => {
+                if (urlInput.value) {
+                    clearBtn.classList.remove('hidden');
+                    if (pasteBtn) pasteBtn.classList.add('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                    if (pasteBtn) pasteBtn.classList.remove('hidden');
+                }
+            });
+
+            clearBtn.addEventListener('click', () => {
+                urlInput.value = '';
+                urlInput.dispatchEvent(new Event('input'));
+                urlInput.focus();
+            });
+
+            errorClose.addEventListener('click', clearError);
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -272,12 +730,14 @@
 
                     if (!resp.ok || data.error) {
                         showError(data.error || `Request failed (${resp.status})`);
+                        emptyBox.classList.remove('hidden');
                         return;
                     }
 
                     renderFiles(data.files || [], cookie);
                 } catch (err) {
                     showError('Network error: ' + (err && err.message ? err.message : err));
+                    emptyBox.classList.remove('hidden');
                 } finally {
                     setLoading(false);
                 }
