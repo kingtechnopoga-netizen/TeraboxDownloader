@@ -47,7 +47,15 @@ def api_info():
     try:
         files = resolve(url, cookie=cookie)
     except TeraboxError as e:
-        return jsonify({"error": str(e)}), 400
+        msg = str(e)
+        # Provide a more helpful message for the common "need verify" case.
+        if "need verify" in msg.lower():
+            msg = (
+                "Terabox requires authentication for this share. "
+                "Please paste your Terabox login cookie (ndus=...) "
+                "in the Advanced section below and try again."
+            )
+        return jsonify({"error": msg}), 400
     except Exception as e:  # noqa: BLE001
         app.logger.exception("Unexpected error resolving %s", url)
         return jsonify({"error": f"Unexpected error: {e}"}), 500
