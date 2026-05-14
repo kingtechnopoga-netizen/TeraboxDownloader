@@ -28,6 +28,45 @@ gunicorn -w 2 -k gthread --threads 8 -b 0.0.0.0:${PORT:-5000} app:app
 
 `gthread` is recommended over `sync` workers because the proxy endpoint streams data, which is I/O-bound.
 
+## Deploy
+
+This repo includes configs for the most common platforms. Pick one:
+
+### Render.com (recommended free tier)
+
+1. Push the repo to GitHub.
+2. Go to <https://dashboard.render.com/blueprints> and click **New Blueprint Instance**.
+3. Select this repo. Render will read [`render.yaml`](./render.yaml) and provision the service.
+4. Done. Health check is wired to `/healthz`.
+
+### Railway / Heroku / Fly Procfile-style hosts
+
+The included [`Procfile`](./Procfile) and [`runtime.txt`](./runtime.txt) are enough.
+On Railway: **New Project → Deploy from GitHub** and it just works.
+
+### Fly.io
+
+```bash
+fly launch --copy-config --no-deploy   # uses fly.toml + Dockerfile
+fly deploy
+```
+
+### Docker (any host: VPS, Coolify, Dokku, etc.)
+
+```bash
+docker build -t terabox-downloader .
+docker run -p 5000:5000 terabox-downloader
+```
+
+### Vercel (with caveats)
+
+A [`vercel.json`](./vercel.json) is included, but **the `/api/proxy` streaming endpoint is not a great fit for Vercel** because serverless functions have strict timeouts (10s on Hobby) and request/response size limits. The `/` and `/api/info` endpoints work fine. If you deploy to Vercel, expect users to use the **Direct link** button rather than the proxied **Download** button.
+
+```bash
+npm i -g vercel
+vercel
+```
+
 ## How it works
 
 1. The browser POSTs the share URL to `/api/info`.
